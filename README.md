@@ -2,12 +2,15 @@
 
 A donut.c-inspired fetch tool that spins your distro logo in 3D with live-updating system info.
 
-## Changes in this Fork
+## -- Changes in this Fork --
 ### COLOR OVERRIDE: 
-use `--color` to override the entire logo with a solid color.
+use `--color` argument to override the entire logo with a solid color.
   - BLACK, RED, BLUE, GREEN, YELLOW, PURPLE, CYAN, WHITE
 ### ALIGN LOGO ON EXIT: 
 When exiting fetch, the logo snaps back to its flat rotation for aesthetics.
+</br>
+</br>
+</br>
 
 ## Logo
 ![demo](demo.gif)
