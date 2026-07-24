@@ -1,4 +1,5 @@
 # fetch
+forked from areofyl/fetch
 
 A donut.c-inspired fetch tool that spins your distro logo in 3D with live-updating system info.
 
@@ -260,13 +261,8 @@ colors
 CLI flags override config file settings.
 
 ## Contributing
-
-PRs are welcome! If you want to add a feature, fix a bug, or package fetch for
-your distro, go for it. I try to keep the codebase small and easy to understand,
-so smaller PRs are easier to merge than big ones.
-
-If you want to chat about ideas before writing code, reach out on
-[Reddit](https://www.reddit.com/user/areofyl) or open an issue.
+This is a fork from areofyl/fetch for my own edits and amusement.
+If you're interested in the original project, please find them over at https://github.com/areofyl/fetch
 
 ## How it works
 
