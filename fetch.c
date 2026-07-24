@@ -28,6 +28,11 @@
 
 static struct termios orig_termios;
 static int termios_saved = 0;
+bool is_exiting = false;
+
+static void queue_exit() {
+	is_exiting = true;
+}
 
 static void cleanup(void) {
   if (termios_saved)
@@ -38,8 +43,9 @@ static void cleanup(void) {
 
 static void handle_signal(int sig) {
   (void)sig;
-  cleanup();
-  _exit(0);
+  queue_exit();
+  // cleanup();
+  // _exit(0);
 }
 
 static volatile sig_atomic_t term_resized = 0;
@@ -210,6 +216,42 @@ static int sysctl_int(const char *name) {
 }
 #endif
 
+// --- COLORS ---
+typedef enum {
+	BLACK = 30,
+	RED = 31,
+	GREEN = 32,
+	YELLOW = 33,
+	BLUE = 34,
+	PURPLE = 35,
+	CYAN = 36,
+	WHITE = 37
+} Colors;
+
+// --- Parse Color Names ---
+static int get_color_code(char* color_code) {
+	// Colors c;
+	if (strcmp(color_code, "BLACK") == 0) {
+		return (Colors)BLACK;
+	} else if (strcmp(color_code, "RED") == 0) {
+		return (Colors)RED;
+	} else if (strcmp(color_code, "GREEN") == 0) {
+		return (Colors)GREEN;
+	} else if (strcmp(color_code, "YELLOW") == 0) {
+		return (Colors)YELLOW;
+	} else if (strcmp(color_code, "BLUE") == 0) {
+		return (Colors)BLUE;
+	} else if (strcmp(color_code, "PURPLE") == 0) {
+		return (Colors)PURPLE;
+	} else if (strcmp(color_code, "CYAN") == 0) {
+		return (Colors)CYAN;
+	} else if (strcmp(color_code, "WHITE") == 0) {
+		return (Colors)WHITE;
+	} else {
+		return 1;
+	}
+}
+
 // --- Logo storage (codepoint-aware) ---
 
 #define MAX_LOGO_ROWS 64
@@ -224,6 +266,7 @@ static int logo_cell_counts[MAX_LOGO_ROWS];
 static int logo_rows = 0;
 static int logo_cols = 0;
 static int logo_has_ansi = 0;
+int chosen_color = 0;
 
 // Process a logo row: split into codepoints, extracting ANSI colors
 static void process_logo_row(int row) {
@@ -271,7 +314,10 @@ static void process_logo_row(int row) {
       actual++;
     memcpy(logo_cells[row][col], p, actual);
     logo_cells[row][col][actual] = '\0';
-    logo_cell_color[row][col] = cur_color;
+    
+    // If --color override, swap it here.
+    logo_cell_color[row][col] = chosen_color ? chosen_color : cur_color;
+    
     col++;
     p += actual;
   }
@@ -349,7 +395,7 @@ static float char_weight_utf8(const char *ch) {
     return 1.00f;
   // Dark shade U+2593: E2 96 93
   if (memcmp(ch, "\xe2\x96\x93", 3) == 0)
-    return 0.75f;
+     .75f;
   // Medium shade U+2592: E2 96 92
   if (memcmp(ch, "\xe2\x96\x92", 3) == 0)
     return 0.50f;
@@ -2849,6 +2895,9 @@ int main(int argc, char **argv) {
           "  --height <n>              Override render height in rows\n"
           "  --no-info                 Just the logo, no system info\n"
           "  --no-color                Disable logo coloring\n"
+          "  --color                   Set color override:\n"
+          "                              - BLACK, RED, BLUE, GREEN, YELLOW\n"
+          "                              - PURPLE, CYAN, WHITE\n"
           "  --frames <n>              Stop after n frames (default 2000)\n"
           "  --infinite                Run forever (keypress or Ctrl-C to "
           "exit)\n"
@@ -2898,6 +2947,8 @@ int main(int argc, char **argv) {
       show_info = 0;
     } else if (strcmp(argv[i], "--no-color") == 0) {
       use_color = 0;
+    } else if (strcmp(argv[i], "--color") == 0) {
+      chosen_color = get_color_code(argv[++i]);
     } else if (strcmp(argv[i], "--frames") == 0 && i + 1 < argc) {
       max_frames = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--infinite") == 0) {
@@ -3049,7 +3100,7 @@ int main(int argc, char **argv) {
   signal(SIGINT, handle_signal);
   signal(SIGTERM, handle_signal);
   signal(SIGWINCH, handle_winch);
-  atexit(cleanup);
+  atexit(queue_exit);
 
   int fetch_start = show_info ? 1 : 0;
 
@@ -3067,8 +3118,8 @@ int main(int argc, char **argv) {
 
   for (int frame = 0; max_frames == 0 || frame < max_frames; frame++) {
     struct pollfd pfd = {.fd = STDIN_FILENO, .events = POLLIN};
-    if (poll(&pfd, 1, 0) > 0)
-      break;
+    if (poll(&pfd, 1, 0) > 0) //<-------------------------------------------------
+      queue_exit();
     // Handle terminal resize: recompute the same layout as startup
     if (term_resized) {
       term_resized = 0;
@@ -3105,8 +3156,18 @@ int main(int argc, char **argv) {
     }
 
     clear_buf();
-    A += rotate_x ? 0.04f * speed : 0.0f;
-    B += rotate_y ? 0.06f * speed : 0.0f;
+    
+    // =============== INGO CODE ============
+    // A += rotate_x ? 0.04f * speed : 0.0f;
+    // B += rotate_y ? 0.06f * speed : 0.0f;
+    if (is_exiting == true) {
+	    A = 0.0f;
+	    B = 0.0f;
+    } else {
+    	A += rotate_x ? 0.04f * speed : 0.0f;
+     	B += rotate_y ? 0.06f * speed : 0.0f;
+    }
+    
     float cA = cosf(A), sA = sinf(A);
     float cB = cosf(B), sB = sinf(B);
 
@@ -3222,7 +3283,7 @@ int main(int argc, char **argv) {
             }
             *p++ = ' ';
           } else {
-            int c = colorbuf[i][j];
+            int c = colorbuf[i][j]; // <-----------------------------------------
             if (c != prev_color) {
               if (logo_has_ansi && c > 0 && c < 128) {
                 // Build ANSI escape lazily on first use
@@ -3273,11 +3334,13 @@ int main(int argc, char **argv) {
         *p++ = '\n';
       }
     }
-    if (write(STDOUT_FILENO, out_buf, p - out_buf) < 0)
-      break;
+    
+    // If character pressed or exiting, break out of the loop.
+    if (write(STDOUT_FILENO, out_buf, p - out_buf) < 0 || is_exiting)
+  		break;
     usleep(50000);
   }
-
+  
   printf("\033[?25h");
   fflush(stdout);
   return 0;
