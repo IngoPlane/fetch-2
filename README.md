@@ -2,6 +2,12 @@
 
 A donut.c-inspired fetch tool that spins your distro logo in 3D with live-updating system info.
 
+## Changes in this Fork
+- Color Override: use `--color` to override the entire logo with a solid color.
+  - BLACK, RED, BLUE, GREEN, YELLOW, PURPLE, CYAN, WHITE
+- Realign on Exit: When exiting fetch, the logo snaps back to its flat rotation for aesthetics.
+
+## Logo
 ![demo](demo.gif)
 
 Takes any ASCII/Unicode distro logo, turns each character into a point cloud
@@ -240,6 +246,7 @@ colors
 | `--height <n>` | Override render height in rows |
 | `--no-info` | Just the logo, no system info |
 | `--no-color` | Disable coloring |
+| `--color` | Set Color:  BLACK, RED, BLUE, GREEN, YELLOW, PURPLE, CYAN, WHITE|
 | `--frames <n>` | Stop after n frames |
 | `--infinite` | Run forever |
 | `--shading-chars <str>` | Custom shading ramp, supports UTF-8 |
